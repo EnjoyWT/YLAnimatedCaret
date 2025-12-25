@@ -70,6 +70,18 @@
         ></textarea>
       </YLAnimatedCaret>
     </section>
+    <!-- 新增：粒子特效演示 -->
+    <section class="demo-section highlight">
+      <h2>✨ 新特性：粒子光晕特效</h2>
+      <p class="tip">向左删除文字时查看效果</p>
+      <YLAnimatedCaret type="particle">
+        <textarea
+          v-model="textParticle"
+          placeholder="试着输入一些文字，然后按住 Backspace 连续删除..."
+          rows="4"
+        ></textarea>
+      </YLAnimatedCaret>
+    </section>
   </div>
 </template>
 
@@ -77,6 +89,9 @@
 import { ref } from "vue";
 import YLAnimatedCaret from "../src/YLAnimatedCaret.vue";
 
+const textParticle = ref(
+  "Type some text here and try deleting it to see the new particle effect!"
+);
 const text1 = ref("");
 const text2 = ref("");
 const text3 = ref("");
@@ -125,6 +140,18 @@ h1 {
   font-size: 16px;
   color: #606266;
   margin-bottom: 16px;
+}
+
+/* 高亮新特性区域 */
+.highlight {
+  border: 1px solid #409eff;
+  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.1);
+}
+
+.tip {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 12px;
 }
 
 textarea,

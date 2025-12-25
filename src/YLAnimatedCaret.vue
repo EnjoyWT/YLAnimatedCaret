@@ -6,8 +6,8 @@
   >
     <!-- 光标层 -->
     <div class="yl-caret-layer" v-show="isFocused">
-      <!-- 尾迹 -->
-      <template v-if="enableTrail">
+      <!-- 尾迹 (Trail Mode) -->
+      <template v-if="type === 'trail' && enableTrail">
         <div
           v-for="i in trailCount"
           :key="`trail-${i}`"
@@ -56,6 +56,13 @@ const props = defineProps({
       ["gradient-blue", "gradient-red", "solid"].includes(value),
   },
 
+  // 拖尾类型
+  type: {
+    type: String,
+    default: "trail", // 'trail' | 'particle'
+    validator: (value) => ["trail", "particle"].includes(value),
+  },
+
   // 颜色（覆盖预设）
   caretColor: {
     type: Object,
@@ -66,7 +73,7 @@ const props = defineProps({
   trailCount: {
     type: Number,
     default: 2,
-    validator: (value) => value >= 0 && value <= 5,
+    validator: (value) => value >= 0 && value <= 10,
   },
   trailOpacity: {
     type: Array,
@@ -118,6 +125,7 @@ const wrapperRef = ref(null);
 const targetInput = ref(null);
 const isFocused = ref(false);
 const isMoving = ref(false);
+const isComposing = ref(false); // 是否正在进行 IME 输入 (中文拼音等)
 const caretPos = ref({ x: 0, y: 0, height: 20 });
 
 // 光标移动定时器和连续移动检测
@@ -183,7 +191,64 @@ const initMirror = () => {
   mirrorDiv.style.wordWrap = "break-word";
   mirrorDiv.style.pointerEvents = "none";
   mirrorDiv.style.zIndex = "-9999";
+  mirrorDiv.style.zIndex = "-9999";
   document.body.appendChild(mirrorDiv);
+};
+
+// 粒子工具函数
+const randomRange = (min, max) => Math.random() * (max - min) + min;
+
+// 生成粒子
+const spawnParticles = (x, y, startX, height, colorVar) => {
+  const container = wrapperRef.value?.querySelector(".yl-caret-layer");
+  if (!container) return;
+
+  // 极致精简：并不是每次删除都产生粒子
+  // 40% 概率产生 1 个粒子，60% 概率不产生
+  // 营造断续、稀疏的高级感
+  const particleCount = Math.random() > 0.6 ? 1 : 0;
+
+  for (let i = 0; i < particleCount; i++) {
+    const particle = document.createElement("div");
+    particle.classList.add("yl-particle");
+
+    // 位置：均匀分布在光标移动路径上（即被删除文字的位置）
+    // 稍微向右偏移一点，留在光标身后
+    const pX =
+      randomRange(Math.min(startX, x), Math.max(startX, x)) + randomRange(0, 4);
+    const pY = y + randomRange(height * 0.2, height * 0.8);
+
+    // 随机大小：2px - 3.5px (稍微缩小一点)
+    const size = randomRange(2, 3.5);
+
+    // 运动优化：几乎静止，只有微弱的浮动
+    // tx, ty 极小，模拟空气扰动
+    const tx = randomRange(-5, 5);
+    const ty = randomRange(-5, 5);
+
+    particle.style.width = `${size}px`;
+    particle.style.height = `${size}px`;
+    particle.style.left = `${pX}px`;
+    particle.style.top = `${pY}px`;
+    particle.style.setProperty("--tx", `${tx}px`);
+    particle.style.setProperty("--ty", `${ty}px`);
+
+    // 颜色继承
+    const color = colorVar || "var(--yl-caret-color-start)";
+    particle.style.backgroundColor = color;
+    // 光晕稍微减弱，更精致
+    particle.style.boxShadow = `0 0 ${size * 1.5}px ${color}`;
+
+    // 延长的消失时间：0.8s - 1.2s，营造"慢慢消失"
+    particle.style.animationDuration = `${randomRange(0.8, 1.2)}s`;
+
+    container.appendChild(particle);
+
+    // 动画结束后移除
+    particle.addEventListener("animationend", () => {
+      particle.remove();
+    });
+  }
 };
 
 // 复制样式
@@ -228,6 +293,35 @@ const updateCursor = (triggerMove = false) => {
     moveTimer = setTimeout(() => {
       isMoving.value = false;
     }, moveDuration);
+
+    // --- 粒子生成逻辑 ---
+    // 向左移动且距离足够才触发
+    const currentX = caretPos.value.x;
+    const lastX = mirrorDiv
+      ? parseFloat(mirrorDiv.getAttribute("data-last-x")) || currentX
+      : currentX;
+
+    // 记录上一次位置供下次使用
+    if (mirrorDiv) mirrorDiv.setAttribute("data-last-x", currentX);
+
+    if (props.type === "particle" && triggerMove) {
+      // 这里的 caretPos 实际上是预期的目标位置，我们需要比较前后的位置
+      // 但由于 updateCursor 被设计为幂等的，这里我们需要一个更可靠的方式来获取"上一次"位置
+      // 或者我们可以简单判断：如果是 continuous backspace，我们就在当前位置生成
+
+      // 实际上，为了效果好，我们可以不管通过什么方式触发，
+      // 只要是 isRapidMove (连续操作) 且是向左删除（通常光标位置会变小，但换行时例外）
+      // 简单起见，我们在每次 triggerMove 时，如果在连续模式下，都生成粒子
+
+      // 注意：updateCursor 可能会在 resize 时触发，所以必须依赖 triggerMove
+      spawnParticles(
+        caretPos.value.x,
+        caretPos.value.y,
+        caretPos.value.x + 10,
+        caretPos.value.height
+      );
+    }
+    // ------------------
   }
 
   if (!targetInput.value) return;
@@ -387,6 +481,15 @@ const bindEvents = () => {
   targetInput.value.addEventListener("focus", handleFocus);
   targetInput.value.addEventListener("blur", handleBlur);
   targetInput.value.addEventListener("input", handleInput);
+  targetInput.value.addEventListener(
+    "compositionstart",
+    handleCompositionStart
+  );
+  targetInput.value.addEventListener(
+    "compositionupdate",
+    handleCompositionUpdate
+  );
+  targetInput.value.addEventListener("compositionend", handleCompositionEnd);
   targetInput.value.addEventListener("click", handleClick);
   targetInput.value.addEventListener("keyup", handleKeyup);
   targetInput.value.addEventListener("keydown", handleKeydown);
@@ -400,6 +503,15 @@ const unbindEvents = () => {
   targetInput.value.removeEventListener("focus", handleFocus);
   targetInput.value.removeEventListener("blur", handleBlur);
   targetInput.value.removeEventListener("input", handleInput);
+  targetInput.value.removeEventListener(
+    "compositionstart",
+    handleCompositionStart
+  );
+  targetInput.value.removeEventListener(
+    "compositionupdate",
+    handleCompositionUpdate
+  );
+  targetInput.value.removeEventListener("compositionend", handleCompositionEnd);
   targetInput.value.removeEventListener("click", handleClick);
   targetInput.value.removeEventListener("keyup", handleKeyup);
   targetInput.value.removeEventListener("keydown", handleKeydown);
@@ -417,6 +529,22 @@ const handleBlur = () => {
 };
 
 const handleInput = () => {
+  // IME 输入时也要更新光标位置
+  updateCursor(true);
+};
+
+const handleCompositionStart = () => {
+  isComposing.value = true;
+};
+
+const handleCompositionUpdate = () => {
+  // IME 组合文本变化时，实时更新光标位置
+  updateCursor(true);
+};
+
+const handleCompositionEnd = () => {
+  isComposing.value = false;
+  // 上屏后立即更新位置
   updateCursor(true);
 };
 
@@ -428,8 +556,23 @@ const handleKeyup = () => {
   updateCursor(true);
 };
 
-const handleKeydown = () => {
-  nextTick(() => updateCursor(true));
+const handleKeydown = (e) => {
+  // 对于会触发 input 事件的按键（如删除、普通字符输入），
+  // 交给 handleInput 处理，避免重复计算或竞态条件
+  // 仅对光标移动类按键立即响应
+  const navigationKeys = [
+    "ArrowLeft",
+    "ArrowRight",
+    "ArrowUp",
+    "ArrowDown",
+    "Home",
+    "End",
+    "PageUp",
+    "PageDown",
+  ];
+  if (navigationKeys.includes(e.key)) {
+    nextTick(() => updateCursor(true));
+  }
 };
 
 const handleScroll = () => {
@@ -580,6 +723,32 @@ export default { name: "YLAnimatedCaret" };
   50% {
     opacity: var(--yl-breathe-min-opacity, 0.4);
     box-shadow: none; /* Breathe the glow too */
+  }
+}
+
+/* 粒子特效 */
+:deep(.yl-particle) {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 100;
+  will-change: transform, opacity;
+  animation-name: yl-particle-fade;
+  animation-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  animation-fill-mode: forwards;
+  /* 柔和边缘 */
+  filter: blur(0.5px);
+}
+
+@keyframes yl-particle-fade {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    /* 几乎原地消失，带一点点漂浮感 */
+    transform: translate(var(--tx), var(--ty)) scale(0.2);
+    opacity: 0;
   }
 }
 </style>
