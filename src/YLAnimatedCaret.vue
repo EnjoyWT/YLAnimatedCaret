@@ -97,16 +97,19 @@ const props = defineProps({
 // 预设系统
 const PRESETS = {
   "gradient-blue": {
-    "--yl-caret-color-start": "#409eff",
-    "--yl-caret-color-end": "rgba(64, 158, 255, 0.1)",
+    "--yl-caret-color-start": "#2979ff", // Deep Electric Blue (More visible)
+    "--yl-caret-color-end": "rgba(41, 121, 255, 0.3)", // End opacity increased for "substance"
+    "--yl-caret-glow": "0 0 8px rgba(41, 121, 255, 0.5)",
   },
   "gradient-red": {
-    "--yl-caret-color-start": "#f56c6c",
-    "--yl-caret-color-end": "rgba(245, 108, 108, 0.1)",
+    "--yl-caret-color-start": "#ff4d4f",
+    "--yl-caret-color-end": "rgba(255, 77, 79, 0.3)",
+    "--yl-caret-glow": "0 0 8px rgba(255, 77, 79, 0.6)",
   },
   solid: {
     "--yl-caret-color-start": "#409eff",
     "--yl-caret-color-end": "#409eff",
+    "--yl-caret-glow": "none",
   },
 };
 
@@ -478,7 +481,7 @@ export default { name: "YLAnimatedCaret" };
 /* 光标容器 */
 .yl-caret-group {
   position: absolute;
-  width: 2px;
+  width: 2px; /* Reverted to 2px for a cleaner look */
   top: 0;
   left: 0;
   will-change: transform;
@@ -488,19 +491,25 @@ export default { name: "YLAnimatedCaret" };
 .yl-caret-visual {
   width: 100%;
   height: 100%;
-  border-radius: 2px;
+  border-radius: 4px;
+  /* 
+     Design Update:
+     Solid color for top 50% to prevent "disappearing" feeling.
+     Smooth fade to 30% opacity at the bottom.
+  */
   background: linear-gradient(
     180deg,
-    var(--yl-caret-color-start, #409eff) 0%,
-    var(--yl-caret-color-end, rgba(64, 158, 255, 0.1)) 100%
+    var(--yl-caret-color-start, #409eff) 50%,
+    var(--yl-caret-color-end, rgba(64, 158, 255, 0.3)) 100%
   );
+  box-shadow: var(--yl-caret-glow, 0 0 8px rgba(64, 158, 255, 0.4));
 }
 
-/* 主光标 */
+/* 主光标 - Fluid Motion */
 .yl-main-caret {
   z-index: 2;
-  transition: transform 0.18s cubic-bezier(0.25, 0.8, 0.25, 1),
-    height 0.18s ease-out;
+  transition: transform 0.1s cubic-bezier(0.2, 0.9, 0.1, 1),
+    /* Snappy but Smooth */ height 0.1s ease-out;
 
   .yl-caret-visual {
     animation: yl-breathe var(--yl-breathe-duration, 1.3s) ease-in-out infinite;
@@ -517,33 +526,34 @@ export default { name: "YLAnimatedCaret" };
 /* 尾迹 */
 .yl-trail {
   z-index: 1;
-  transition: transform 0.24s cubic-bezier(0.25, 0.8, 0.25, 1),
-    height 0.24s ease-out;
+  transition: transform 0.15s cubic-bezier(0.2, 0.9, 0.1, 1),
+    height 0.15s ease-out;
 }
 
+/* Smoother trail decay */
 .yl-trail-1 {
-  opacity: var(--yl-trail-opacity-1, 0.2);
-  transition-duration: var(--yl-trail-delay-1, 0.24s);
+  opacity: var(--yl-trail-opacity-1, 0.35);
+  transition-duration: var(--yl-trail-delay-1, 0.15s);
 }
 
 .yl-trail-2 {
-  opacity: var(--yl-trail-opacity-2, 0.1);
-  transition-duration: var(--yl-trail-delay-2, 0.3s);
+  opacity: var(--yl-trail-opacity-2, 0.2);
+  transition-duration: var(--yl-trail-delay-2, 0.18s);
 }
 
 .yl-trail-3 {
-  opacity: var(--yl-trail-opacity-3, 0.05);
-  transition-duration: var(--yl-trail-delay-3, 0.36s);
+  opacity: var(--yl-trail-opacity-3, 0.1);
+  transition-duration: var(--yl-trail-delay-3, 0.21s);
 }
 
 .yl-trail-4 {
-  opacity: var(--yl-trail-opacity-4, 0.03);
-  transition-duration: var(--yl-trail-delay-4, 0.42s);
+  opacity: var(--yl-trail-opacity-4, 0.05);
+  transition-duration: var(--yl-trail-delay-4, 0.24s);
 }
 
 .yl-trail-5 {
   opacity: var(--yl-trail-opacity-5, 0.02);
-  transition-duration: var(--yl-trail-delay-5, 0.48s);
+  transition-duration: var(--yl-trail-delay-5, 0.27s);
 }
 
 /* 呼吸动画 */
@@ -551,9 +561,11 @@ export default { name: "YLAnimatedCaret" };
   0%,
   100% {
     opacity: 1;
+    box-shadow: var(--yl-caret-glow, 0 0 8px rgba(64, 158, 255, 0.4));
   }
   50% {
-    opacity: var(--yl-breathe-min-opacity, 0.3);
+    opacity: var(--yl-breathe-min-opacity, 0.6);
+    box-shadow: none; /* Breathe the glow too */
   }
 }
 </style>
