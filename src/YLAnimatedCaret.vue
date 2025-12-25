@@ -80,11 +80,11 @@ const props = defineProps({
   // 呼吸配置
   breatheDuration: {
     type: Number,
-    default: 1.3,
+    default: 1.6, // 更舒缓的呼吸节奏
   },
   breatheMinOpacity: {
     type: Number,
-    default: 0.3,
+    default: 0.4, // 稍微提高最小透明度，避免过于暗淡
   },
 
   // CSS 变量覆盖
@@ -120,8 +120,10 @@ const isFocused = ref(false);
 const isMoving = ref(false);
 const caretPos = ref({ x: 0, y: 0, height: 20 });
 
-// 光标移动定时器
+// 光标移动定时器和连续移动检测
 let moveTimer = null;
+let lastMoveTime = 0;
+const RAPID_MOVE_THRESHOLD = 200; // 200ms 内再次移动视为连续操作
 
 // 镜像元素
 let mirrorDiv = null;
@@ -213,11 +215,19 @@ const copyStyles = (sourceNode, targetNode) => {
 // 更新光标位置
 const updateCursor = (triggerMove = false) => {
   if (triggerMove) {
+    const now = Date.now();
+    const isRapidMove = now - lastMoveTime < RAPID_MOVE_THRESHOLD;
+    lastMoveTime = now;
+
     isMoving.value = true;
     if (moveTimer) clearTimeout(moveTimer);
+
+    // 连续快速移动时延长移动状态，保持流畅
+    const moveDuration = isRapidMove ? 500 : 350;
+
     moveTimer = setTimeout(() => {
       isMoving.value = false;
-    }, 100);
+    }, moveDuration);
   }
 
   if (!targetInput.value) return;
@@ -508,11 +518,14 @@ export default { name: "YLAnimatedCaret" };
 /* 主光标 - Fluid Motion */
 .yl-main-caret {
   z-index: 2;
-  transition: transform 0.1s cubic-bezier(0.2, 0.9, 0.1, 1),
-    /* Snappy but Smooth */ height 0.1s ease-out;
+  /* 优化过渡时间和缓动函数，实现更自然的移动效果 */
+  transition: transform 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    /* ease-out-quad: 快速启动，优雅减速 */ height 0.18s ease-out;
 
   .yl-caret-visual {
-    animation: yl-breathe var(--yl-breathe-duration, 1.3s) ease-in-out infinite;
+    animation: yl-breathe var(--yl-breathe-duration, 2.2s) ease-in-out infinite;
+    /* 渐进式动画恢复，避免突兀 */
+    transition: opacity 0.2s ease-out;
   }
 
   &.is-moving {
@@ -526,8 +539,9 @@ export default { name: "YLAnimatedCaret" };
 /* 尾迹 */
 .yl-trail {
   z-index: 1;
-  transition: transform 0.15s cubic-bezier(0.2, 0.9, 0.1, 1),
-    height 0.15s ease-out;
+  /* 尾迹稍慢于主光标，形成自然的拖尾效果 */
+  transition: transform 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    height 0.22s ease-out;
 }
 
 /* Smoother trail decay */
@@ -564,7 +578,7 @@ export default { name: "YLAnimatedCaret" };
     box-shadow: var(--yl-caret-glow, 0 0 8px rgba(64, 158, 255, 0.4));
   }
   50% {
-    opacity: var(--yl-breathe-min-opacity, 0.6);
+    opacity: var(--yl-breathe-min-opacity, 0.4);
     box-shadow: none; /* Breathe the glow too */
   }
 }
