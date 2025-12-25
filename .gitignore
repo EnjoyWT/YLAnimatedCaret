@@ -80,7 +80,8 @@ out
 
 # Nuxt.js build / generate output
 .nuxt
-dist
+# dist - 保留 dist 目录以便从 GitHub 安装
+# dist
 
 # Gatsby files
 .cache/

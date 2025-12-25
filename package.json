@@ -22,7 +22,7 @@
       "import": "./dist/yl-animated-caret.js",
       "require": "./dist/yl-animated-caret.umd.cjs"
     },
-    "./dist/style.css": "./dist/style.css"
+    "./dist/yl-animated-caret.css": "./dist/yl-animated-caret.css"
   },
   "files": [
     "dist"
@@ -43,6 +43,6 @@
   },
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/EnjoyWT/YLAnimatedCaret.git"
   }
 }
