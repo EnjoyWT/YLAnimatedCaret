@@ -104,17 +104,20 @@ const props = defineProps({
 // 预设系统
 const PRESETS = {
   "gradient-blue": {
-    "--yl-caret-color-start": "#2979ff", // Deep Electric Blue (More visible)
-    "--yl-caret-color-end": "rgba(41, 121, 255, 0.3)", // End opacity increased for "substance"
+    "--yl-caret-color-start": "#2979ff",
+    "--yl-caret-color-mid": "rgba(41, 121, 255, 0.85)",
+    "--yl-caret-color-end": "rgba(41, 121, 255, 0.6)",
     "--yl-caret-glow": "0 0 8px rgba(41, 121, 255, 0.5)",
   },
   "gradient-red": {
     "--yl-caret-color-start": "#ff4d4f",
-    "--yl-caret-color-end": "rgba(255, 77, 79, 0.3)",
+    "--yl-caret-color-mid": "rgba(255, 77, 79, 0.85)",
+    "--yl-caret-color-end": "rgba(255, 77, 79, 0.6)",
     "--yl-caret-glow": "0 0 8px rgba(255, 77, 79, 0.6)",
   },
   solid: {
     "--yl-caret-color-start": "#409eff",
+    "--yl-caret-color-mid": "#409eff",
     "--yl-caret-color-end": "#409eff",
     "--yl-caret-glow": "none",
   },
@@ -645,15 +648,16 @@ export default { name: "YLAnimatedCaret" };
   width: 100%;
   height: 100%;
   border-radius: 4px;
-  /* 
+  /*
      Design Update:
-     Solid color for top 50% to prevent "disappearing" feeling.
-     Smooth fade to 30% opacity at the bottom.
+     使用更符合人类视觉感知的渐变曲线
+     更早开始、更平滑的过渡
   */
   background: linear-gradient(
     180deg,
-    var(--yl-caret-color-start, #409eff) 50%,
-    var(--yl-caret-color-end, rgba(64, 158, 255, 0.3)) 100%
+    var(--yl-caret-color-start, #409eff) 0%,
+    var(--yl-caret-color-mid, rgba(64, 158, 255, 0.85)) 60%,
+    var(--yl-caret-color-end, rgba(64, 158, 255, 0.6)) 100%
   );
   box-shadow: var(--yl-caret-glow, 0 0 8px rgba(64, 158, 255, 0.4));
 }
