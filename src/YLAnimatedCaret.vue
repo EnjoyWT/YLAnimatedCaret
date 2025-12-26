@@ -203,20 +203,19 @@ const spawnParticles = (x, y, startX, height, colorVar) => {
   const container = wrapperRef.value?.querySelector(".yl-caret-layer");
   if (!container) return;
 
-  // 极致精简：并不是每次删除都产生粒子
-  // 40% 概率产生 1 个粒子，60% 概率不产生
-  // 营造断续、稀疏的高级感
-  const particleCount = Math.random() > 0.6 ? 1 : 0;
+  // 粒子数量：每次生成 1-2 个粒子
+  const particleCount = Math.floor(randomRange(1, 2));
 
   for (let i = 0; i < particleCount; i++) {
     const particle = document.createElement("div");
     particle.classList.add("yl-particle");
 
-    // 位置：均匀分布在光标移动路径上（即被删除文字的位置）
-    // 稍微向右偏移一点，留在光标身后
-    const pX =
-      randomRange(Math.min(startX, x), Math.max(startX, x)) + randomRange(0, 4);
-    const pY = y + randomRange(height * 0.2, height * 0.8);
+    // 位置：X 在光标附近，稍微向后偏移
+    const pX = x + randomRange(-2, 6);
+    // Y 集中在光标中心：使用高斯分布模拟，集中在中心 ±20% 范围内
+    const centerY = y + height / 2;
+    const offsetY = (Math.random() - 0.5) * 2 * (height * 0.2); // 中心 ±20%
+    const pY = centerY + offsetY;
 
     // 随机大小：2px - 3.5px (稍微缩小一点)
     const size = randomRange(2, 3.5);
@@ -233,11 +232,12 @@ const spawnParticles = (x, y, startX, height, colorVar) => {
     particle.style.setProperty("--tx", `${tx}px`);
     particle.style.setProperty("--ty", `${ty}px`);
 
-    // 颜色继承
+    // 颜色继承，更淡的效果
     const color = colorVar || "var(--yl-caret-color-start)";
     particle.style.backgroundColor = color;
-    // 光晕稍微减弱，更精致
-    particle.style.boxShadow = `0 0 ${size * 1.5}px ${color}`;
+    particle.style.opacity = "0.4"; // 降低初始透明度
+    // 移除光晕，更 subtle
+    particle.style.boxShadow = "none";
 
     // 延长的消失时间：0.8s - 1.2s，营造"慢慢消失"
     particle.style.animationDuration = `${randomRange(0.8, 1.2)}s`;
@@ -743,7 +743,7 @@ export default { name: "YLAnimatedCaret" };
 @keyframes yl-particle-fade {
   0% {
     transform: translate(0, 0) scale(1);
-    opacity: 1;
+    opacity: 0.35;
   }
   100% {
     /* 几乎原地消失，带一点点漂浮感 */
