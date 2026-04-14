@@ -148,7 +148,9 @@ const computedWrapperStyle = computed(() => {
   const colorStyles = props.caretColor
     ? {
         "--yl-caret-color-start": props.caretColor.start,
-        "--yl-caret-color-end": props.caretColor.end,
+        "--yl-caret-color-mid": props.caretColor.mid || props.caretColor.start,
+        "--yl-caret-color-end": props.caretColor.end || props.caretColor.start,
+        "--yl-caret-glow": props.caretColor.glow || `0 0 8px ${props.caretColor.start}`,
       }
     : {};
 
